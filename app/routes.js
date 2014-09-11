@@ -1,4 +1,4 @@
-var Region = require('./models/ticket')
+var Models = require('./models/ticket')
 
 module.exports = function (app, passport) {
 	// homepage
@@ -37,9 +37,9 @@ module.exports = function (app, passport) {
 		res.redirect('/')
 	})
 	
-	// ticket
+	// region
 	app.get('/api/regions', function (req, res) {
-		Region.find(function (err, regions) {
+		Models.Region.find(function (err, regions) {
 			if (err)
 				res.send(err)
 			
@@ -47,11 +47,95 @@ module.exports = function (app, passport) {
 		})
 	})
 	
+	app.get('/api/regions/:region_id', function (req, res) {
+		Models.Region.findById(req.params.region_id, function (err, region) {
+			if (err)
+				res.send(err)
+			
+			res.json(region)
+		})
+	})
+	
 	app.post('/api/regions', function (req, res) {
-		Region.create({
-			name: req.body.name,
-			abbreviation: req.body.abbreviation,
-			active: req.body.active			
+		var region = new Models.Region()
+		
+		region.name = req.body.name
+		region.abbreviation = req.body.abbreviation
+		region.active = req.body.active
+		region.updatedAt = region.createdAt
+		
+		region.save(function (err) {
+			if (err)
+				res.send(err)
+			
+			res.json({ message: 'Region added', data: region })
+		})
+	})
+	
+	app.put('/api/regions/:region_id', function (req, res) {
+		var now = new Date()
+		
+		Models.Region.findById(req.params.region_id, function (err, region) {
+			if (err)
+				res.send(err)
+				
+			region.name = req.body.name
+			region.abbreviation = req.body.abbreviation
+			region.active = req.body.active
+			region.updatedAt = now
+			
+			region.save(function (err) {
+				if (err)
+					res.send(err)
+				
+				res.json(region)
+			})
+		})
+	})
+	
+	app.delete('/api/regions/:region_id', function (req, res) {
+		Models.Region.findByIdAndRemove(req.params.region_id, function (err) {
+			if (err)
+				res.send(err)
+				
+			res.json({ message: 'Region deleted!' })
+		})
+	})
+	
+	// instance
+	app.get('/api/instances', function (req, res) {
+		Models.Instance.find(function(err, instances) {
+			if (err)
+				res.send(err)
+				
+			res.json(instances)
+		})
+	})
+	
+	app.post('/api/instances', function (req, res) {
+		var instance = new Models.Instance()
+		var region = Models.Region.findById(req.body.region_id)
+		instance.name = req.body.name
+		instance.abbreviation = req.body.abbreviation
+		instance._region = region._id
+		instance.active = req.body.active
+		
+		instance.updatedAt = instance.createdAt
+		
+		instance.save(function (err) {
+			if (err)
+				res.send(err)
+				
+			res.json({ message: 'Instance added', data: instance })
+		})
+	})
+	
+	app.delete('/api/instances/:instance_id', function (req, res) {
+		Models.Instance.findByIdAndRemove(req.params.instance_id, function (err) {
+			if (err)
+				res.send(err)
+			
+			res.json({ message: "Instance deleted" })
 		})
 	})
 }
